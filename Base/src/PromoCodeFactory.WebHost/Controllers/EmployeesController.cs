@@ -1,11 +1,14 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Formatters;
+using Microsoft.Extensions.DependencyInjection;
+using PromoCodeFactory.Core.Abstractions.Repositories;
+using PromoCodeFactory.Core.Domain.Administration;
+using PromoCodeFactory.DataAccess.Repositories;
+using PromoCodeFactory.WebHost.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using PromoCodeFactory.Core.Abstractions.Repositories;
-using PromoCodeFactory.Core.Domain.Administration;
-using PromoCodeFactory.WebHost.Models;
 
 namespace PromoCodeFactory.WebHost.Controllers
 {
@@ -17,10 +20,12 @@ namespace PromoCodeFactory.WebHost.Controllers
     public class EmployeesController : ControllerBase
     {
         private readonly IRepository<Employee> _employeeRepository;
+        private IServiceProvider _serviceProvider;
 
-        public EmployeesController(IRepository<Employee> employeeRepository)
+        public EmployeesController(IRepository<Employee> employeeRepository, IServiceProvider serviceProvider)
         {
             _employeeRepository = employeeRepository;
+            _serviceProvider = serviceProvider;
         }
 
         /// <summary>
@@ -53,22 +58,104 @@ namespace PromoCodeFactory.WebHost.Controllers
             var employee = await _employeeRepository.GetByIdAsync(id);
 
             if (employee == null)
-                return NotFound();
-
-            var employeeModel = new EmployeeResponse()
             {
-                Id = employee.Id,
-                Email = employee.Email,
-                Roles = employee.Roles.Select(x => new RoleItemResponse()
-                {
-                    Name = x.Name,
-                    Description = x.Description
-                }).ToList(),
-                FullName = employee.FullName,
-                AppliedPromocodesCount = employee.AppliedPromocodesCount
-            };
+                return NotFound();
+            }
+
+            EmployeeResponse employeeModel = new EmployeeResponse(employee);
 
             return employeeModel;
+        }
+
+        /// <summary>
+        /// Создать нового сотрудника
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost]
+        public async Task<ActionResult<EmployeeCreationResponse>> CreateEmployeeAsync(NewEmployeeData employeeData)
+        {
+            using (IServiceScope scope = _serviceProvider.CreateScope())
+            {
+                IRepository<Role> roleRepository = scope.ServiceProvider.GetService<IRepository<Role>>();
+                IEnumerable<Role> allRoles = await roleRepository.GetAllAsync();
+
+                List<Role> employeeRoles = allRoles.Where(role => employeeData.Roles.Contains(role.Id)).ToList();
+
+                if (!employeeRoles.Any())
+                {
+                    return BadRequest();
+                }
+
+                Employee employee = new Employee(employeeData.FirstName,
+                                                 employeeData.LastName,
+                                                 employeeData.Email,
+                                                 employeeRoles);
+                _employeeRepository.Add(employee);
+
+                EmployeeCreationResponse employeeCreationModel = new EmployeeCreationResponse()
+                {
+                    Id = employee.Id,
+                    FullName = employee.FullName,
+                };
+
+                return employeeCreationModel;
+            }
+        }
+
+        /// <summary>
+        /// Обновить сотрудника сотрудника по Id
+        /// </summary>
+        /// <returns></returns>
+        [HttpPut("{id:guid}")]
+        public async Task<ActionResult<EmployeeResponse>> UpdateEmployeeByIdAsync(Guid id, NewEmployeeData employeeData)
+        {
+            Employee employee = await _employeeRepository.GetByIdAsync(id);
+
+            if (employee is null)
+            {
+                return NotFound();
+            }
+
+            using (IServiceScope scope = _serviceProvider.CreateScope())
+            {
+                IRepository<Role> roleRepository = scope.ServiceProvider.GetService<IRepository<Role>>();
+                IEnumerable<Role> allRoles = await roleRepository.GetAllAsync();
+
+                List<Role> employeeRoles = allRoles.Where(role => employeeData.Roles.Contains(role.Id)).ToList();
+
+                if (!employeeRoles.Any())
+                {
+                    return BadRequest();
+                }
+
+                employee.FirstName = employeeData.FirstName;
+                employee.LastName = employeeData.LastName;
+                employee.Email = employeeData.Email;
+                employee.Roles = employeeRoles;
+
+                EmployeeResponse employeeModel = new EmployeeResponse(employee);
+
+                return employeeModel;
+            }
+        }
+
+        /// <summary>
+        /// Удалить сотрудника сотрудника по Id
+        /// </summary>
+        /// <returns></returns>
+        [HttpDelete("{id:guid}")]
+        public async Task<ActionResult> DeleteEmployeeByIdAsync(Guid id)
+        {
+            Employee employee = await _employeeRepository.GetByIdAsync(id);
+
+            if (employee is null)
+            {
+                return NotFound();
+            }
+
+            _employeeRepository.Remove(employee);
+
+            return Ok();
         }
     }
 }
