@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace PromoCodeFactory.WebHost.Controllers
 {
@@ -74,32 +75,29 @@ namespace PromoCodeFactory.WebHost.Controllers
         [HttpPost]
         public async Task<ActionResult<EmployeeCreationResponse>> CreateEmployeeAsync(NewEmployeeData employeeData)
         {
-            using (IServiceScope scope = _serviceProvider.CreateScope())
+            IRepository<Role> roleRepository = _serviceProvider.GetService<IRepository<Role>>();
+            IEnumerable<Role> allRoles = await roleRepository.GetAllAsync();
+
+            List<Role> employeeRoles = allRoles.Where(role => employeeData.Roles.Contains(role.Id)).ToList();
+
+            if (!employeeRoles.Any())
             {
-                IRepository<Role> roleRepository = scope.ServiceProvider.GetService<IRepository<Role>>();
-                IEnumerable<Role> allRoles = await roleRepository.GetAllAsync();
-
-                List<Role> employeeRoles = allRoles.Where(role => employeeData.Roles.Contains(role.Id)).ToList();
-
-                if (!employeeRoles.Any())
-                {
-                    return BadRequest();
-                }
-
-                Employee employee = new Employee(employeeData.FirstName,
-                                                 employeeData.LastName,
-                                                 employeeData.Email,
-                                                 employeeRoles);
-                _employeeRepository.Add(employee);
-
-                EmployeeCreationResponse employeeCreationModel = new EmployeeCreationResponse()
-                {
-                    Id = employee.Id,
-                    FullName = employee.FullName,
-                };
-
-                return employeeCreationModel;
+                return BadRequest();
             }
+
+            Employee employee = new Employee(employeeData.FirstName,
+                                             employeeData.LastName,
+                                             employeeData.Email,
+                                             employeeRoles);
+            _employeeRepository.Add(employee);
+
+            EmployeeCreationResponse employeeCreationModel = new EmployeeCreationResponse()
+            {
+                Id = employee.Id,
+                FullName = employee.FullName,
+            };
+
+            return employeeCreationModel;
         }
 
         /// <summary>
@@ -116,27 +114,24 @@ namespace PromoCodeFactory.WebHost.Controllers
                 return NotFound();
             }
 
-            using (IServiceScope scope = _serviceProvider.CreateScope())
+            IRepository<Role> roleRepository = _serviceProvider.GetService<IRepository<Role>>();
+            IEnumerable<Role> allRoles = await roleRepository.GetAllAsync();
+
+            List<Role> employeeRoles = allRoles.Where(role => employeeData.Roles.Contains(role.Id)).ToList();
+
+            if (!employeeRoles.Any())
             {
-                IRepository<Role> roleRepository = scope.ServiceProvider.GetService<IRepository<Role>>();
-                IEnumerable<Role> allRoles = await roleRepository.GetAllAsync();
-
-                List<Role> employeeRoles = allRoles.Where(role => employeeData.Roles.Contains(role.Id)).ToList();
-
-                if (!employeeRoles.Any())
-                {
-                    return BadRequest();
-                }
-
-                employee.FirstName = employeeData.FirstName;
-                employee.LastName = employeeData.LastName;
-                employee.Email = employeeData.Email;
-                employee.Roles = employeeRoles;
-
-                EmployeeResponse employeeModel = new EmployeeResponse(employee);
-
-                return employeeModel;
+                return BadRequest();
             }
+
+            employee.FirstName = employeeData.FirstName;
+            employee.LastName = employeeData.LastName;
+            employee.Email = employeeData.Email;
+            employee.Roles = employeeRoles;
+
+            EmployeeResponse employeeModel = new EmployeeResponse(employee);
+
+            return employeeModel;
         }
 
         /// <summary>
