@@ -21,12 +21,12 @@ namespace PromoCodeFactory.WebHost.Controllers
     public class EmployeesController : ControllerBase
     {
         private readonly IRepository<Employee> _employeeRepository;
-        private IServiceProvider _serviceProvider;
+        private readonly IRepository<Role> _roleRepository;
 
-        public EmployeesController(IRepository<Employee> employeeRepository, IServiceProvider serviceProvider)
+        public EmployeesController(IRepository<Employee> employeeRepository, IRepository<Role> roleRepository)
         {
             _employeeRepository = employeeRepository;
-            _serviceProvider = serviceProvider;
+            _roleRepository = roleRepository;
         }
 
         /// <summary>
@@ -75,8 +75,7 @@ namespace PromoCodeFactory.WebHost.Controllers
         [HttpPost]
         public async Task<ActionResult<EmployeeCreationResponse>> CreateEmployeeAsync(NewEmployeeData employeeData)
         {
-            IRepository<Role> roleRepository = _serviceProvider.GetService<IRepository<Role>>();
-            IEnumerable<Role> allRoles = await roleRepository.GetAllAsync();
+            IEnumerable<Role> allRoles = await _roleRepository.GetAllAsync();
 
             List<Role> employeeRoles = allRoles.Where(role => employeeData.Roles.Contains(role.Id)).ToList();
 
@@ -114,8 +113,7 @@ namespace PromoCodeFactory.WebHost.Controllers
                 return NotFound();
             }
 
-            IRepository<Role> roleRepository = _serviceProvider.GetService<IRepository<Role>>();
-            IEnumerable<Role> allRoles = await roleRepository.GetAllAsync();
+            IEnumerable<Role> allRoles = await _roleRepository.GetAllAsync();
 
             List<Role> employeeRoles = allRoles.Where(role => employeeData.Roles.Contains(role.Id)).ToList();
 
