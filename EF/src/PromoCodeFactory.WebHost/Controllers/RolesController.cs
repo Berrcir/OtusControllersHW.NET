@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -15,9 +16,9 @@ namespace PromoCodeFactory.WebHost.Controllers
     [Route("api/v1/[controller]")]
     public class RolesController
     {
-        private readonly IRepository<Role> _rolesRepository;
+        private readonly IRepository<Role, Guid> _rolesRepository;
 
-        public RolesController(IRepository<Role> rolesRepository)
+        public RolesController(IRepository<Role, Guid> rolesRepository)
         {
             _rolesRepository = rolesRepository;
         }

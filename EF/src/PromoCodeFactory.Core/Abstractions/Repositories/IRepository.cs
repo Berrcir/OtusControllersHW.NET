@@ -1,15 +1,111 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using PromoCodeFactory.Core.Domain;
 
 namespace PromoCodeFactory.Core.Abstractions.Repositories
 {
-    public interface IRepository<T>
-        where T : BaseEntity
+    /// <summary>
+    /// Описания общих методов для всех репозиториев.
+    /// </summary>
+    /// <typeparam name="TEntity"> Тип Entity для репозитория. </typeparam>
+    /// <typeparam name="TPrimaryKey"> Тип первичного ключа. </typeparam>
+    public interface IRepository<TEntity, TPrimaryKey>
+        where TEntity : IEntity<TPrimaryKey>
     {
-        Task<IEnumerable<T>> GetAllAsync();
+        /// <summary>
+        /// Запросить все сущности в базе.
+        /// </summary>
+        /// <param name="noTracking"> Вызвать с AsNoTracking.</param>
+        /// <returns> IQueryable массив сущностей.</returns>
+        IQueryable<TEntity> GetAll(bool noTracking = false);
 
-        Task<T> GetByIdAsync(Guid id);
+        /// <summary>
+        /// Запросить все сущности в базе.
+        /// </summary>
+        /// <param name="cancellationToken"> Токен отмены. </param>
+        /// <param name="asNoTracking"> Вызвать с AsNoTracking. </param>
+        /// <returns> Список сущностей. </returns>
+        Task<List<TEntity>> GetAllAsync(CancellationToken cancellationToken = default, bool asNoTracking = false);
+
+        /// <summary>
+        /// Получить сущность по Id.
+        /// </summary>
+        /// <param name="id"> Id сущности. </param>
+        /// <returns> Cущность. </returns>
+        TEntity Get(TPrimaryKey id);
+
+        /// <summary>
+        /// Получить сущность по Id.
+        /// </summary>
+        /// <param name="id"> Id сущности. </param>
+        /// <param name="cancellationToken"></param>
+        /// <returns> Cущность. </returns>
+        Task<TEntity> GetAsync(TPrimaryKey id, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Удалить сущность.
+        /// </summary>
+        /// <param name="id"> Id удалённой сущности. </param>
+        /// <returns> Была ли сущность удалена. </returns>
+        bool Delete(TPrimaryKey id);
+
+        /// <summary>
+        /// Удалить сущность.
+        /// </summary>
+        /// <param name="entity"> Cущность для удаления. </param>
+        /// <returns> Была ли сущность удалена. </returns>
+        bool Delete(TEntity entity);
+
+        /// <summary>
+        /// Удалить сущности.
+        /// </summary>
+        /// <param name="entities"> Коллекция сущностей для удаления. </param>
+        /// <returns> Была ли операция удаления успешна. </returns>
+        bool DeleteRange(ICollection<TEntity> entities);
+
+        /// <summary>
+        /// Для сущности проставить состояние - что она изменена.
+        /// </summary>
+        /// <param name="entity"> Сущность для изменения. </param>
+        void SetEntityStateModified(TEntity entity);
+
+        /// <summary>
+        /// Добавить в базу одну сущность.
+        /// </summary>
+        /// <param name="entity"> Сущность для добавления. </param>
+        /// <returns> Добавленная сущность. </returns>
+        TEntity Add(TEntity entity);
+
+        /// <summary>
+        /// Добавить в базу одну сущность.
+        /// </summary>
+        /// <param name="entity"> Сущность для добавления. </param>
+        /// <returns> Добавленная сущность. </returns>
+        Task<TEntity> AddAsync(TEntity entity);
+
+        /// <summary>
+        /// Добавить в базу массив сущностей.
+        /// </summary>
+        /// <param name="entities"> Массив сущностей. </param>
+        void AddRange(List<TEntity> entities);
+
+        /// <summary>
+        /// Добавить в базу массив сущностей.
+        /// </summary>
+        /// <param name="entities"> Массив сущностей. </param>
+        Task AddRangeAsync(ICollection<TEntity> entities);
+
+        /// <summary>
+        /// Сохранить изменения.
+        /// </summary>
+        void SaveChanges();
+
+        /// <summary>
+        /// Сохранить изменения.
+        /// </summary>
+        Task SaveChangesAsync(CancellationToken cancellationToken = default);
     }
 }

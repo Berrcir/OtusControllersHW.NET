@@ -6,8 +6,9 @@ using PromoCodeFactory.Core.Domain.Administration;
 namespace PromoCodeFactory.Core.Domain.PromoCodeManagement
 {
     public class PromoCode
-        : BaseEntity
+        : IEntity<Guid>
     {
+        public Guid Id { get; set; }
         public string Code { get; set; }
 
         public string ServiceInfo { get; set; }

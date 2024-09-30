@@ -1,8 +1,11 @@
-﻿namespace PromoCodeFactory.Core.Domain.PromoCodeManagement
+﻿using System;
+
+namespace PromoCodeFactory.Core.Domain.PromoCodeManagement
 {
     public class Preference
-        : BaseEntity
+        : IEntity<Guid>
     {
+        public Guid Id { get; set; }
         public string Name { get; set; }
     }
 }
